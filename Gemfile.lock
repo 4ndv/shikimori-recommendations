@@ -1,0 +1,23 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    faraday (0.12.1)
+      multipart-post (>= 1.2, < 3)
+    faraday-rate_limiter (0.0.4)
+      faraday
+    faraday_middleware (0.11.0.1)
+      faraday (>= 0.7.4, < 1.0)
+    multipart-post (2.0.0)
+    redis (3.3.3)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  faraday
+  faraday-rate_limiter
+  faraday_middleware
+  redis
+
+BUNDLED WITH
+   1.14.6

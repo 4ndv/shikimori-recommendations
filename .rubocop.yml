@@ -1,0 +1,21 @@
+Style/AsciiComments:
+  Enabled: false
+
+Style/SymbolArray:
+  Enabled: false
+
+Style/RedundantSelf:
+  Enabled: false
+
+Metrics/MethodLength:
+  Enabled: true
+  Max: 50
+
+Metrics/LineLength:
+  Enabled: false
+
+Metrics/BlockLength:
+  Max: 50
+
+Documentation:
+  Enabled: false
