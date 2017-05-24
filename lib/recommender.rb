@@ -17,6 +17,15 @@ class Recommender
 
   def initialize
     @redis = Redis.new(url: ENV['REDIS_URL'] || 'redis://localhost:6379/0')
+    @vars = {}
+  end
+
+  def set var, value
+    @vars[var] = value
+  end
+
+  def get var
+    @vars[var]
   end
 
   def temp_key
@@ -39,8 +48,8 @@ class Recommender
 
     similar_users_items = ["#{category}:user:#{user}:items"]
     similar_users_items << similar_users.map { |s| "#{category}:user:#{s}:items" }
-    similar_users_weights = [-1.0]
-    similar_users_weights << Array.new(similar_users.size, 1.0)
+    similar_users_weights = [-1]
+    similar_users_weights << Array.new(similar_users.size, 1)
 
     @redis.zunionstore(key, similar_users_items.flatten, weights: similar_users_weights.flatten, aggregate: 'min')
 
@@ -71,22 +80,17 @@ class Recommender
   def calc_item_probability(category, similars_key, item)
     key = temp_key
 
-    @redis.zinterstore(key, [similars_key, "#{category}:item:#{item}:scores"], weights: [0.0, 1.0])
+    @redis.zinterstore(key, [similars_key, "#{category}:item:#{item}:scores"], weights: [0, 1])
 
     scores = @redis.zrange(key, 0, -1, with_scores: true)
 
     @redis.del(key)
 
-    puts scores
-
     scores = scores.map { |s| s[1] }
 
-    puts 'Sc'
-    puts scores
+    return 0 if scores.empty?
 
-    return 0 unless scores.size > 0
-
-    probability = scores.sum / scores.size.to_f
+    probability = scores.sum / scores.size
 
     probability
   end
@@ -99,7 +103,7 @@ class Recommender
     similars = find_similarity_candidates(category, user)
 
     similars.each do |similar_user|
-      @redis.zadd(key_similars, similar_user, calc_similarity(category, user, similar_user))
+      @redis.zadd(key_similars, calc_similarity(category, user, similar_user), similar_user)
     end
 
     @redis.expire(key_similars, TEMP_TTL)
@@ -118,16 +122,16 @@ class Recommender
     end
 
     if amount > 0
-      candidates_scores.sort_by(&:last).first(amount)
+      candidates_scores.sort_by(&:last).reverse.first(amount)
     else
-      candidates_scores.sort_by(&:last)
+      candidates_scores.sort_by(&:last).reverse
     end
   end
 
   def calc_similarity(category, user, with)
     key = temp_key
 
-    @redis.zinterstore(key, ["#{category}:user:#{user}:items", "#{category}:user:#{with}:items"], weights: [1.0, -1.0])
+    @redis.zinterstore(key, ["#{category}:user:#{user}:items", "#{category}:user:#{with}:items"], weights: [1, -1])
 
     diffs = @redis.zrange(key, 0, -1, with_scores: true)
 
